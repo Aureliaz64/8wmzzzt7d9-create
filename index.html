@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>鲁迅颜色意象互动展</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="poster-bg"></div>
+  <main class="page">
+    <header class="hero">
+      <p class="hero-tag">News Communication · Digital Humanities</p>
+      <h1>鲁迅颜色意象互动展</h1>
+      <p class="hero-sub">
+        颜色 / 原文 / 出处可视化展示
+      </p>
+    </header>
+
+    <section class="controls">
+      <label>
+        关键词检索
+        <input id="searchInput" type="text" placeholder="输入作品名、颜色、引文关键词..." />
+      </label>
+      <label>
+        色卡体系
+        <select id="systemFilter">
+          <option value="all">全部体系</option>
+          <option value="cn">中国传统色</option>
+          <option value="western">西方经典色</option>
+        </select>
+      </label>
+    </section>
+
+    <section class="viz-panel">
+      <h2>互动数据看板</h2>
+      <div class="headline-row">
+        <p id="headlineInsight" class="headline-insight"></p>
+        <button id="exportPosterBtn" type="button">导出展示图 PNG</button>
+      </div>
+      <div id="statCards" class="stat-cards"></div>
+      <div class="viz-grid">
+        <div class="viz-card">
+          <h3>色类占比（按频次）</h3>
+          <div id="colorBars" class="bars"></div>
+        </div>
+        <div class="viz-card">
+          <h3>年份分布（按引文）</h3>
+          <div id="yearBars" class="bars"></div>
+        </div>
+      </div>
+      <div class="viz-card story-card">
+        <h3>传播叙事线</h3>
+        <div id="storyTimeline" class="story-timeline"></div>
+      </div>
+    </section>
+
+    <section class="import-panel">
+      <h2>导入统计与引文数据</h2>
+      <p class="import-tip">
+        支持 <code>.xlsx</code>、<code>.json</code>、<code>.csv</code>。优先字段：
+        <code>bucket,quote,work,year,source,count</code>；也自动识别中文表头（如「颜色/原文/作品/年份/出处/频次」）。
+      </p>
+      <div class="import-row">
+        <input id="dataFileInput" type="file" accept=".xlsx,.json,.csv,application/json,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+        <button id="loadSampleBtn" type="button">载入内置示例</button>
+        <button id="downloadTemplateBtn" type="button">下载 CSV 模板</button>
+      </div>
+      <div id="sheetPickerRow" class="import-row" style="display:none;">
+        <label>
+          统计工作表
+          <select id="statsSheetSelect"></select>
+        </label>
+        <label>
+          引文工作表
+          <select id="quotesSheetSelect"></select>
+        </label>
+        <button id="applySheetsBtn" type="button">应用两个工作表</button>
+      </div>
+      <p id="importStatus" class="import-status">当前使用内置示例数据。</p>
+    </section>
+
+    <section>
+      <h2>中国传统色卡</h2>
+      <div id="cnGrid" class="grid"></div>
+    </section>
+
+    <section>
+      <h2>西方经典色卡</h2>
+      <div id="westernGrid" class="grid"></div>
+    </section>
+  </main>
+
+  <dialog id="detailModal" class="modal">
+    <button id="closeModal" class="close-btn" aria-label="关闭">×</button>
+    <div id="modalContent"></div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="./preloaded-data.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

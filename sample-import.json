@@ -1,0 +1,36 @@
+{
+  "rows": [
+    {
+      "bucket": "red",
+      "quote": "我仿佛看见冬花开在雪野中，有许多蜜蜂们忙碌地飞着。",
+      "work": "《野草·雪》",
+      "year": "1925",
+      "source": "示例 JSON 数据",
+      "count": 534
+    },
+    {
+      "bucket": "black",
+      "quote": "铁屋子一般，沉沉地压着人。",
+      "work": "《呐喊·自序》",
+      "year": "1922",
+      "source": "示例 JSON 数据",
+      "count": 327
+    },
+    {
+      "bucket": "yellow",
+      "quote": "脸上瘦削不堪，黄中带灰，像是被年月风干了。",
+      "work": "《祝福》",
+      "year": "1924",
+      "source": "示例 JSON 数据",
+      "count": 169
+    },
+    {
+      "bucket": "gray",
+      "quote": "天是青白的，云是灰白的，路上行人却都匆匆。",
+      "work": "《故乡》",
+      "year": "1921",
+      "source": "示例 JSON 数据",
+      "count": 46
+    }
+  ]
+}
