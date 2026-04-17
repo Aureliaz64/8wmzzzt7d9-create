@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>鲁迅3D行迹与色系分布图</title>
+  <style>
+    :root {
+      --bg: #f4f8fb;
+      --panel: #ffffff;
+      --line: #d7e3ef;
+      --text: #1f2d3d;
+      --muted: #5f7388;
+      --accent: #49a6e9;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
+      color: var(--text);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 18px 16px 24px;
+    }
+    .hero {
+      margin-bottom: 12px;
+    }
+    .hero h1 {
+      margin: 6px 0;
+      font-size: clamp(24px, 3.5vw, 38px);
+      color: #203144;
+    }
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 6px 16px rgba(66, 116, 154, 0.08);
+    }
+    .map-panel {
+      padding: 10px;
+    }
+    #map3d {
+      width: 100%;
+      height: 640px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #dfeefa 0%, #d5e7f6 100%);
+      position: relative;
+      border: 1px solid #d6e5f2;
+      perspective: 1200px;
+    }
+    #map3d svg {
+      width: 100%;
+      height: 100%;
+      transform: rotateX(14deg);
+      transform-origin: center center;
+    }
+    .right-panel {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    select, button {
+      border: 1px solid #c9d9e8;
+      background: #fff;
+      color: #274058;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+    button {
+      cursor: pointer;
+      background: #edf6ff;
+    }
+    button:hover {
+      filter: brightness(1.02);
+    }
+    .stage-title {
+      margin: 0;
+      font-size: 18px;
+      color: #1f3348;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .works {
+      display: grid;
+      gap: 6px;
+    }
+    .work {
+      border-left: 3px solid #8ec9f4;
+      background: #f5fbff;
+      border-radius: 0 8px 8px 0;
+      padding: 7px 9px;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .section-title {
+      margin: 2px 0 4px;
+      color: #22374d;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .bars {
+      display: grid;
+      gap: 6px;
+    }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 60px 1fr 44px;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+    }
+    .bar-track {
+      height: 10px;
+      border-radius: 999px;
+      background: #e7eef5;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+    }
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      font-size: 12px;
+      color: #4e6479;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+    .map-hint {
+      position: absolute;
+      left: 10px;
+      bottom: 8px;
+      font-size: 11px;
+      color: #617c96;
+      background: rgba(255, 255, 255, 0.74);
+      border: 1px solid #d4e2ef;
+      border-radius: 6px;
+      padding: 3px 6px;
+      pointer-events: none;
+    }
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      #map3d { height: 520px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page" id="posterRoot">
+    <header class="hero">
+      <h1>鲁迅行迹、创作作品与色系占比 3D图谱</h1>
+      <p>3D地图动态路线 + 作品标注 + 阶段颜色意象占比（S02/引文数据联动）</p>
+    </header>
+
+    <section class="layout">
+      <article class="panel map-panel">
+        <div id="map3d">
+          <svg id="svgMap" viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#7ea3c5" flood-opacity="0.35" />
+              </filter>
+              <filter id="cityGlow" x="-40%" y="-40%" width="180%" height="180%">
+                <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#67b6ea" flood-opacity="0.55" />
+              </filter>
+            </defs>
+            <rect x="0" y="0" width="1000" height="620" fill="#d6e8f7"></rect>
+            <g opacity="0.25" stroke="#a8c4de" stroke-width="1">
+              <path d="M0 110 H1000M0 210 H1000M0 310 H1000M0 410 H1000M0 510 H1000"></path>
+              <path d="M120 0 V620M250 0 V620M380 0 V620M510 0 V620M640 0 V620M770 0 V620M900 0 V620"></path>
+            </g>
+            <g id="landLayer" fill="#c8e0c8" stroke="#8fb497" stroke-width="1.2">
+              <!-- 中国轮廓（简化参考） -->
+              <path d="M118,194 L180,168 L252,155 L321,138 L390,132 L458,139 L526,152 L592,170 L656,188 L708,218 L739,246 L759,274 L753,303 L731,330 L693,352 L651,362 L612,372 L579,396 L553,426 L513,442 L468,450 L418,445 L366,434 L320,418 L286,394 L258,366 L225,350 L188,331 L164,301 L141,272 L127,239 Z"></path>
+              <!-- 海南 -->
+              <path d="M446,505 L470,517 L488,536 L468,548 L442,540 L432,521 Z"></path>
+              <!-- 台湾 -->
+              <path d="M735,418 L748,438 L741,466 L726,482 L714,460 L719,433 Z"></path>
+              <!-- 日本（只保留鲁迅行迹相关参考区域） -->
+              <path d="M888,258 L902,275 L896,302 L876,316 L868,292 Z"></path>
+            </g>
+            <g id="routeLayer" fill="none" stroke-linecap="round" stroke-linejoin="round"></g>
+            <g id="nodeLayer" filter="url(#softShadow)"></g>
+            <g id="labelLayer"></g>
+          </svg>
+          <div class="map-hint">中国地图聚焦视图（鲁迅行迹城市高亮）</div>
+        </div>
+      </article>
+
+      <aside class="panel right-panel">
+        <div class="row">
+          <label for="stageSelect">阶段</label>
+          <select id="stageSelect"></select>
+          <button id="playBtn" type="button">播放</button>
+          <button id="exportBtn" type="button">导出海报</button>
+        </div>
+
+        <p id="stageTitle" class="stage-title"></p>
+        <div id="stageMeta" class="meta"></div>
+
+        <div>
+          <p class="section-title">代表作品 / 成果</p>
+          <div id="stageWorks" class="works"></div>
+        </div>
+
+        <div>
+          <p class="section-title">色系占比（当前阶段）</p>
+          <div id="colorBars" class="bars"></div>
+        </div>
+
+        <div>
+          <p class="section-title">色系图例</p>
+          <div id="legend" class="legend"></div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="./preloaded-data.js"></script>
+  <script>
+    const COLOR_MAP = {
+      red:   { label: "红", hex: "#e85a5a" },
+      black: { label: "黑", hex: "#2d2d2d" },
+      white: { label: "白", hex: "#d8dde6" },
+      yellow:{ label: "黄", hex: "#f3bf4d" },
+      green: { label: "绿", hex: "#58b97a" },
+      blue:  { label: "蓝", hex: "#4f8fe8" },
+      gray:  { label: "灰", hex: "#8a96a3" },
+      cyan:  { label: "青", hex: "#3fb6bf" },
+      pink:  { label: "粉", hex: "#ef8fb1" },
+      purple:{ label: "紫", hex: "#9a74d8" },
+      orange:{ label: "橙", hex: "#f2994a" }
+    };
+    const COLOR_ORDER = Object.keys(COLOR_MAP);
+
+    const STAGES = [
+      {
+        key: "shaoxing-child",
+        name: "童年与少年",
+        period: "1881.9.25-1898.5",
+        startYear: 1881, endYear: 1898,
+        place: "浙江绍兴东昌坊口新台门",
+        city: "绍兴",
+        coord: [120.58, 30.01, 3],
+        labelOffset: [26, -20],
+        works: ["接触《山海经》及历代野史杂记，奠定文学兴趣与民间文学基础"]
+      },
+      {
+        key: "nanjing-school",
+        name: "新式教育启蒙",
+        period: "1898.5-1902.3",
+        startYear: 1898, endYear: 1902,
+        place: "南京江南水师学堂→矿务铁路学堂",
+        city: "南京",
+        coord: [118.78, 32.04, 3],
+        labelOffset: [22, -62],
+        works: ["1901年《戛剑生杂记》（现存最早个人短文）"]
+      },
+      {
+        key: "japan-turn",
+        name: "弃医从文的转折",
+        period: "1902.4-1909.8",
+        startYear: 1902, endYear: 1909,
+        place: "日本东京→仙台→东京",
+        city: "东京",
+        coord: [139.69, 35.68, 3],
+        labelOffset: [20, -34],
+        works: [
+          "1903年译述《斯巴达之魂》《月界旅行》",
+          "1907年《人之历史》《摩罗诗力说》《文化偏至论》",
+          "1909年与周作人合译《域外小说集》第一、二集"
+        ]
+      },
+      {
+        key: "return-home",
+        name: "回国初期任教",
+        period: "1909.8-1912.5",
+        startYear: 1909, endYear: 1912,
+        place: "杭州→绍兴→南京临时政府教育部",
+        city: "杭州",
+        coord: [120.15, 30.28, 3],
+        labelOffset: [22, 16],
+        works: ["1911年文言小说《怀旧》（个人第一篇小说）"]
+      },
+      {
+        key: "beijing-main",
+        name: "新文化运动旗手",
+        period: "1912.5-1926.8",
+        startYear: 1912, endYear: 1926,
+        place: "北京",
+        city: "北京",
+        coord: [116.40, 39.90, 3],
+        labelOffset: [-192, -46],
+        works: [
+          "1918《狂人日记》",
+          "1919《孔乙己》《药》",
+          "1921《阿Q正传》连载",
+          "1923《呐喊》出版",
+          "1924-1926《野草》《朝花夕拾》",
+          "1926《彷徨》出版"
+        ]
+      },
+      {
+        key: "xiamen",
+        name: "厦门短暂任教",
+        period: "1926.9-1927.1",
+        startYear: 1926, endYear: 1927,
+        place: "福建厦门大学",
+        city: "厦门",
+        coord: [118.10, 24.46, 3],
+        labelOffset: [22, 14],
+        works: ["完成《朝花夕拾》最后5篇", "开始《故事新编》之《奔月》"]
+      },
+      {
+        key: "guangzhou",
+        name: "思想重大转变",
+        period: "1927.1-1927.9",
+        startYear: 1927, endYear: 1927,
+        place: "广东广州中山大学",
+        city: "广州",
+        coord: [113.27, 23.13, 3],
+        labelOffset: [-188, 20],
+        works: [
+          "完成《铸剑》（原名《眉间尺》）",
+          "演讲《魏晋风度及文章与药及酒之关系》"
+        ]
+      },
+      {
+        key: "shanghai",
+        name: "最后十年战斗",
+        period: "1927.10-1936.10.19",
+        startYear: 1927, endYear: 1936,
+        place: "上海",
+        city: "上海",
+        coord: [121.47, 31.23, 3],
+        labelOffset: [24, -92],
+        works: [
+          "1936《故事新编》出版",
+          "《三闲集》《二心集》《且介亭杂文》诸集",
+          "翻译果戈理《死魂灵》，编校《海上述林》等"
+        ]
+      }
+    ];
+
+    const quoteRows = Array.isArray(window.PRELOADED_DATA?.quotes) ? window.PRELOADED_DATA.quotes : [];
+    const stageSelect = document.getElementById("stageSelect");
+    const stageTitle = document.getElementById("stageTitle");
+    const stageMeta = document.getElementById("stageMeta");
+    const stageWorks = document.getElementById("stageWorks");
+    const colorBars = document.getElementById("colorBars");
+    const legend = document.getElementById("legend");
+    const playBtn = document.getElementById("playBtn");
+    const exportBtn = document.getElementById("exportBtn");
+    const routeLayer = document.getElementById("routeLayer");
+    const nodeLayer = document.getElementById("nodeLayer");
+    const labelLayer = document.getElementById("labelLayer");
+    let currentStageIdx = 0;
+    let timer = null;
+
+    function parseYear(v) {
+      const m = String(v || "").match(/(18|19|20)\d{2}/);
+      return m ? Number(m[0]) : null;
+    }
+    function normalizeBucket(raw) {
+      const s = String(raw || "").toLowerCase();
+      if (s.includes("red") || s.includes("红")) return "red";
+      if (s.includes("black") || s.includes("黑")) return "black";
+      if (s.includes("white") || s.includes("白")) return "white";
+      if (s.includes("yellow") || s.includes("黄")) return "yellow";
+      if (s.includes("green") || s.includes("绿")) return "green";
+      if (s.includes("blue") || s.includes("蓝")) return "blue";
+      if (s.includes("gray") || s.includes("grey") || s.includes("灰")) return "gray";
+      if (s.includes("cyan") || s.includes("青")) return "cyan";
+      if (s.includes("pink") || s.includes("粉")) return "pink";
+      if (s.includes("purple") || s.includes("紫")) return "purple";
+      if (s.includes("orange") || s.includes("橙")) return "orange";
+      return "unknown";
+    }
+    function stageRows(stage) {
+      return quoteRows.filter((r) => {
+        const y = parseYear(r.year);
+        return y && y >= stage.startYear && y <= stage.endYear;
+      });
+    }
+    function stageColorStats(stage) {
+      const map = new Map();
+      stageRows(stage).forEach((r) => {
+        const b = normalizeBucket(r.bucket);
+        if (!COLOR_MAP[b]) return;
+        map.set(b, (map.get(b) || 0) + 1);
+      });
+      const arr = [...map.entries()].sort((a, b) => b[1] - a[1]);
+      const total = arr.reduce((s, [, v]) => s + v, 0) || 1;
+      return arr.map(([k, v]) => ({
+        key: k,
+        label: COLOR_MAP[k].label,
+        hex: COLOR_MAP[k].hex,
+        count: v,
+        pct: v / total
+      }));
+    }
+    function dominantColor(stage) {
+      const top = stageColorStats(stage)[0];
+      return top ? top.key : "blue";
+    }
+
+    function renderLegend() {
+      legend.innerHTML = COLOR_ORDER.map((k) =>
+        `<div class="legend-item"><span class="dot" style="background:${COLOR_MAP[k].hex}"></span>${COLOR_MAP[k].label}</div>`
+      ).join("");
+    }
+
+    function renderSide(stage) {
+      const rows = stageRows(stage);
+      const stats = stageColorStats(stage);
+      const topLabel = stats.slice(0, 3).map((x) => `${x.label}${(x.pct * 100).toFixed(1)}%`).join(" / ") || "暂无";
+      stageTitle.textContent = `${stage.name}（${stage.period}）`;
+      stageMeta.innerHTML = `
+        <div><strong>主要地点：</strong>${stage.place}</div>
+        <div><strong>引文样本：</strong>${rows.length} 条</div>
+        <div><strong>主导色系：</strong>${topLabel}</div>
+      `;
+      stageWorks.innerHTML = stage.works.map((w) => `<div class="work">${w}</div>`).join("");
+      const max = Math.max(...stats.map((x) => x.count), 1);
+      colorBars.innerHTML = stats.slice(0, 8).map((x) => `
+        <div class="bar-row">
+          <span>${x.label}</span>
+          <span class="bar-track"><span class="bar-fill" style="width:${(x.count / max) * 100}%;background:${x.hex}"></span></span>
+          <span>${(x.pct * 100).toFixed(1)}%</span>
+        </div>
+      `).join("") || "<div class='meta'>当前阶段暂无可计算色系数据。</div>";
+    }
+
+    // 中国及周边聚焦投影（含日本东京）
+    const LON_MIN = 103;
+    const LON_MAX = 146;
+    const LAT_MIN = 20;
+    const LAT_MAX = 41;
+    const MAP_W = 1000;
+    const MAP_H = 620;
+    const CARD_W = 180;
+    const CARD_H = 72;
+    function projectLonLat(lon, lat) {
+      const x = ((lon - LON_MIN) / (LON_MAX - LON_MIN)) * 760 + 120;
+      const y = ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * 380 + 150;
+      return [x, y];
+    }
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function isOverlap(a, b, pad = 8) {
+      return !(
+        a.x + a.w + pad <= b.x ||
+        b.x + b.w + pad <= a.x ||
+        a.y + a.h + pad <= b.y ||
+        b.y + b.h + pad <= a.y
+      );
+    }
+
+    function placeCards(points) {
+      const shifts = [
+        [0, 0], [0, 84], [0, -84], [96, 0], [-96, 0],
+        [96, 84], [-96, 84], [96, -84], [-96, -84],
+        [0, 168], [0, -168], [192, 0], [-192, 0]
+      ];
+      const placed = [];
+
+      points.forEach((p) => {
+        const [dx, dy] = p.s.labelOffset || [18, -16];
+        const baseX = p.x + dx;
+        const baseY = p.y + dy;
+        let chosen = null;
+
+        for (const [sx, sy] of shifts) {
+          const candidate = {
+            x: clamp(baseX + sx, 6, MAP_W - CARD_W - 6),
+            y: clamp(baseY + sy, 6, MAP_H - CARD_H - 6),
+            w: CARD_W,
+            h: CARD_H
+          };
+          const hit = placed.some((r) => isOverlap(candidate, r, 6));
+          if (!hit) {
+            chosen = candidate;
+            break;
+          }
+        }
+        if (!chosen) {
+          chosen = {
+            x: clamp(baseX, 6, MAP_W - CARD_W - 6),
+            y: clamp(baseY, 6, MAP_H - CARD_H - 6),
+            w: CARD_W,
+            h: CARD_H
+          };
+        }
+        placed.push(chosen);
+      });
+
+      return placed;
+    }
+
+    function drawMap(activeIdx) {
+      routeLayer.innerHTML = "";
+      nodeLayer.innerHTML = "";
+      labelLayer.innerHTML = "";
+
+      const points = STAGES.map((s) => {
+        const [x, y] = projectLonLat(s.coord[0], s.coord[1]);
+        return { s, x, y };
+      });
+      const cardRects = placeCards(points);
+
+      const routePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      routePath.setAttribute("d", points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" "));
+      routePath.setAttribute("stroke", "#69d26c");
+      routePath.setAttribute("stroke-width", "2.8");
+      routePath.setAttribute("opacity", "0.95");
+      routePath.setAttribute("fill", "none");
+      routeLayer.appendChild(routePath);
+
+      const routeGlow = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      routeGlow.setAttribute("d", routePath.getAttribute("d"));
+      routeGlow.setAttribute("stroke", "#87df8a");
+      routeGlow.setAttribute("stroke-width", "7");
+      routeGlow.setAttribute("opacity", "0.3");
+      routeGlow.setAttribute("fill", "none");
+      routeLayer.insertBefore(routeGlow, routePath);
+
+      points.forEach((p, idx) => {
+        const rows = stageRows(p.s);
+        const stats = stageColorStats(p.s);
+        const topDots = stats.slice(0, 4);
+        const r = idx === activeIdx ? 11 : 7.5;
+        const color = idx === activeIdx ? "#e74e4e" : "#2b63f0";
+        const halo = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        halo.setAttribute("cx", p.x);
+        halo.setAttribute("cy", p.y);
+        halo.setAttribute("r", r + 5);
+        halo.setAttribute("fill", color);
+        halo.setAttribute("opacity", idx === activeIdx ? "0.28" : "0.18");
+        halo.setAttribute("filter", "url(#cityGlow)");
+        nodeLayer.appendChild(halo);
+
+        const node = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        node.setAttribute("cx", p.x);
+        node.setAttribute("cy", p.y);
+        node.setAttribute("r", r);
+        node.setAttribute("fill", color);
+        node.setAttribute("stroke", "#ffffff");
+        node.setAttribute("stroke-width", idx === activeIdx ? "2.5" : "1.6");
+        nodeLayer.appendChild(node);
+
+        const rect = cardRects[idx];
+        const cardX = rect.x;
+        const cardY = rect.y;
+        const cardW = rect.w;
+        const cardH = rect.h;
+        const anchorX = (cardX + cardW / 2) >= p.x ? cardX : cardX + cardW;
+        const anchorY = cardY + 20;
+
+        const link = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        link.setAttribute("x1", p.x);
+        link.setAttribute("y1", p.y);
+        link.setAttribute("x2", anchorX);
+        link.setAttribute("y2", anchorY);
+        link.setAttribute("stroke", idx === activeIdx ? "#f05f5f" : "#4f79bf");
+        link.setAttribute("stroke-width", idx === activeIdx ? "1.8" : "1.2");
+        link.setAttribute("opacity", "0.9");
+        labelLayer.appendChild(link);
+
+        const card = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        card.setAttribute("x", cardX);
+        card.setAttribute("y", cardY);
+        card.setAttribute("width", cardW);
+        card.setAttribute("height", cardH);
+        card.setAttribute("rx", 8);
+        card.setAttribute("fill", "rgba(255,255,255,0.88)");
+        card.setAttribute("stroke", idx === activeIdx ? "#e96a6a" : "#9cb8d3");
+        card.setAttribute("stroke-width", idx === activeIdx ? "1.6" : "1");
+        labelLayer.appendChild(card);
+
+        const city = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        city.setAttribute("x", cardX + 8);
+        city.setAttribute("y", cardY + 14);
+        city.setAttribute("fill", "#1f3850");
+        city.setAttribute("font-size", "12");
+        city.setAttribute("font-weight", "700");
+        city.textContent = `${p.s.city} · 引文${rows.length}`;
+        labelLayer.appendChild(city);
+
+        const work = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        work.setAttribute("x", cardX + 8);
+        work.setAttribute("y", cardY + 30);
+        work.setAttribute("fill", "#35536e");
+        work.setAttribute("font-size", "10.5");
+        work.textContent = (p.s.works[0] || "").replace(/[《》]/g, "").slice(0, 20);
+        labelLayer.appendChild(work);
+
+        topDots.forEach((item, dotIdx) => {
+          const rr = 2.8 + item.pct * 16;
+          const cx = cardX + 12 + dotIdx * 42;
+          const cy = cardY + 52;
+          const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          c.setAttribute("cx", cx);
+          c.setAttribute("cy", cy);
+          c.setAttribute("r", rr.toFixed(2));
+          c.setAttribute("fill", item.hex);
+          c.setAttribute("opacity", "0.9");
+          labelLayer.appendChild(c);
+
+          const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          t.setAttribute("x", cx + rr + 3);
+          t.setAttribute("y", cy + 3);
+          t.setAttribute("fill", "#41607b");
+          t.setAttribute("font-size", "9.5");
+          t.textContent = `${item.label}${(item.pct * 100).toFixed(0)}%`;
+          labelLayer.appendChild(t);
+        });
+      });
+    }
+
+    function renderAll() {
+      const stage = STAGES[currentStageIdx];
+      renderSide(stage);
+      drawMap(currentStageIdx);
+    }
+
+    function stopPlay() {
+      if (!timer) return;
+      clearInterval(timer);
+      timer = null;
+      playBtn.textContent = "播放";
+    }
+    function togglePlay() {
+      if (timer) {
+        stopPlay();
+        return;
+      }
+      playBtn.textContent = "暂停";
+      timer = setInterval(() => {
+        currentStageIdx = (currentStageIdx + 1) % STAGES.length;
+        stageSelect.value = String(currentStageIdx);
+        renderAll();
+      }, 1900);
+    }
+
+    async function exportPoster() {
+      const old = exportBtn.textContent;
+      exportBtn.textContent = "导出中...";
+      exportBtn.disabled = true;
+      try {
+        const canvas = await html2canvas(document.getElementById("posterRoot"), {
+          backgroundColor: "#f4f8fb",
+          scale: Math.min(window.devicePixelRatio || 1.5, 2)
+        });
+        const a = document.createElement("a");
+        a.href = canvas.toDataURL("image/png");
+        a.download = "鲁迅3D行迹_色系分布海报.png";
+        a.click();
+      } finally {
+        exportBtn.textContent = old;
+        exportBtn.disabled = false;
+      }
+    }
+
+    function init() {
+      stageSelect.innerHTML = STAGES.map((s, i) =>
+        `<option value="${i}">${s.name}（${s.period}）</option>`
+      ).join("");
+      stageSelect.addEventListener("change", (e) => {
+        currentStageIdx = Number(e.target.value || 0);
+        stopPlay();
+        renderAll();
+      });
+      playBtn.addEventListener("click", togglePlay);
+      exportBtn.addEventListener("click", exportPoster);
+      renderLegend();
+      renderAll();
+    }
+    init();
+  </script>
+</body>
+</html>
